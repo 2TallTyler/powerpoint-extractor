@@ -2,7 +2,7 @@
 A simple script to extract images, text, and presenter notes from a folder full of PowerPoint files. It uses the `python-pptx` library.
 
 ## Instructions
-You need python-pptx, if you don't have it already. Install with:
+You need [python-pptx](https://pypi.org/project/python-pptx/), if you don't have it already. Install with:
 ```pip install python-pptx```
 
 1. Clone the repository onto your local drive.
