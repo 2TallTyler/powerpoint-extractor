@@ -9,12 +9,12 @@ You need [python-pptx](https://pypi.org/project/python-pptx/), if you don't have
 2. Copy PowerPoint files into the [input] folder.
 3. Run `extract.py`.
 
-The script will create a new `text.csv` file containing all the text from each slide, alongside the presentation name, page number, and presenter notes.
+## Output
+* Text will be saved to a new `text.csv` file in the root folder. This has a row for each slide, with columns containing the presentation name, page number, all the text from the page, and any presenter notes.
+* Images will be saved to a new `images` folder, named sequentially with the name of the presentation.
 
-Images will be saved to a new `images` folder, named sequentially with the name of the presentation.
-
-## To do
-This is a quick and dirty script I wrote for my job. Feel free to open PRs to clean up my code, add features, etc.
+## Development
+This is a quick and dirty script I wrote for a specific project. I welcome PRs to clean up code, add features, etc.
 
 A few things I might want to add in the future:
 * Add the slide number to the image filename
