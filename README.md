@@ -6,7 +6,7 @@ You need [python-pptx](https://pypi.org/project/python-pptx/), if you don't have
 ```pip install python-pptx```
 
 1. Clone the repository onto your local drive.
-2. Copy PowerPoint files into the [input] folder.
+2. Copy PowerPoint files into the [input](/input) folder.
 3. Run `extract.py`.
 
 ## Output
