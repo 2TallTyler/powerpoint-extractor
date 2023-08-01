@@ -58,6 +58,7 @@ class PowerPointExtractor:
             except:
                 print(f'Could not process image {shape.name} on slide {page}.')
                 self.invalid_images.append(f'Slide {page}: {shape.name}')
+                self.cur_slide_images.append(f'INVALID: {shape.name}')
 
     def generate_image_name_part(self, filename):
         '''
