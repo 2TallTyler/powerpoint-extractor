@@ -121,7 +121,10 @@ class PowerPointExtractor:
                         self.drill_for_images(shape, page + 1, name)
 
                     # Write the page number, collected text, and presenter notes as a new row
-                    writer.writerow([eachfile, page + 1, text, slide.notes_slide.notes_text_frame.text, self.cur_slide_images])
+                    image_list = ''
+                    if (len(self.cur_slide_images) > 0):
+                        image_list = self.cur_slide_images
+                    writer.writerow([eachfile, page + 1, text, slide.notes_slide.notes_text_frame.text, image_list])
 
             print("Finished. Total files: " + str(presentation_count))
             if (len(self.invalid_images) > 0):
