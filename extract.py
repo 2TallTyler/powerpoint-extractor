@@ -11,7 +11,9 @@ import csv
 
 class PowerPointExtractor:
     cur_image_index = 0
-    cur_errors = 0
+    cur_slide_images = []
+
+    invalid_images = []
 
     input_dir = 'input'
     image_output_dir = 'images'
@@ -38,8 +40,9 @@ class PowerPointExtractor:
             f.write(image_bytes)
 
         self.cur_image_index += 1
+        self.cur_slide_images.append(name.split(os.sep)[1])
 
-    def drill_for_images(self, shape, name):
+    def drill_for_images(self, shape, page, name):
         '''
         Recursive function to look inside grouped shapes for pictures and save them.
 
@@ -48,13 +51,13 @@ class PowerPointExtractor:
         '''
         if shape.shape_type == MSO_SHAPE_TYPE.GROUP:
             for s in shape.shapes:
-                self.drill_for_images(s, name)
+                self.drill_for_images(s, page, name)
         if shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
             try:
                 self.save_image(shape.image, name)
             except:
-                print("Could not process an image")
-                self.cur_errors += 1
+                print(f'Could not process image {shape.name} on slide {page}.')
+                self.invalid_images.append(f'Slide {page}: {shape.name}')
 
     def generate_image_name_part(self, filename):
         '''
@@ -88,7 +91,7 @@ class PowerPointExtractor:
             presentation_count = 0
 
             # Write table header
-            field = ["file", "page", "text", "notes"]
+            field = ["File", "Page", "Text", "Notes", "Images"]
             writer.writerow(field)
 
             # Iterate through files
@@ -110,14 +113,19 @@ class PowerPointExtractor:
                             text += os.linesep
                             text += shape.text
 
-                    # Write the page number, collected text, and presenter notes as a new row
-                    writer.writerow([eachfile, page, text, slide.notes_slide.notes_text_frame.text])
+                    # Collect images from each slide
+                    self.cur_slide_images = []
 
                     # Save images from this slide
                     for shape in slide.shapes:
-                        self.drill_for_images(shape, name)
+                        self.drill_for_images(shape, page + 1, name)
 
-            print("Finished. Total files: " + str(presentation_count) + ", total errors reading images: " + str(self.cur_errors))
+                    # Write the page number, collected text, and presenter notes as a new row
+                    writer.writerow([eachfile, page + 1, text, slide.notes_slide.notes_text_frame.text, self.cur_slide_images])
+
+            print("Finished. Total files: " + str(presentation_count))
+            if (len(self.invalid_images) > 0):
+                print(f'WARNING: {len(self.invalid_images)} invalid images found: {self.invalid_images}')
 
 def main():
     ext = PowerPointExtractor('input', 'images')

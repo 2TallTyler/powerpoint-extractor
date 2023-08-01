@@ -15,7 +15,3 @@ You need [python-pptx](https://pypi.org/project/python-pptx/), if you don't have
 
 ## Development
 This is a quick and dirty script I wrote for a specific project. I welcome PRs to clean up code, add features, etc.
-
-A few things I might want to add in the future:
-* Add the slide number to the image filename
-* Split into separate scripts to only process images or text, instead of both
