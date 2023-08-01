@@ -9,129 +9,119 @@ from pptx.enum.shapes import MSO_SHAPE_TYPE
 import glob
 import csv
 
-_image_index = 0
-_errors = 0
+class PowerPointExtractor:
+    cur_image_index = 0
+    cur_errors = 0
 
-def save_image(image, name):
-    '''
-    Save an image to disk.
+    input_dir = 'input'
+    image_output_dir = 'images'
 
-    :param image The image to save.
-    :param name The partial name of the image, including the directory but not including the sequence number.
-    '''
-    global _image_index
+    def __init__(self, inp, out):
+        self.input = inp
+        self.image_output_dir = out
 
-    image_bytes = image.blob
+    def save_image(self, image, name):
+        '''
+        Save an image to disk.
 
-    # Append the sequence number and file extension to the partial name
-    name = name + ' ' + str(_image_index) + '.' + image.ext
+        :param image The image to save.
+        :param name The partial name of the image, including the directory but not including the sequence number.
+        '''
 
-    print(name)
-    with open(name, 'wb') as f:
-        f.write(image_bytes)
+        image_bytes = image.blob
 
-    _image_index += 1
+        # Append the sequence number and file extension to the partial name
+        name = name + ' ' + str(self.cur_image_index) + '.' + image.ext
 
-def drill(shape, name):
-    '''
-    Recursive function to look inside grouped shapes for pictures and save them.
+        print(name)
+        with open(name, 'wb') as f:
+            f.write(image_bytes)
 
-    :param shape The parent shape to look inside.
-    :param name The partial name for any images we find, including the directory but not including the sequence number.
-    '''
-    global _image_index
-    global _errors
+        self.cur_image_index += 1
 
-    if shape.shape_type == MSO_SHAPE_TYPE.GROUP:
-        for s in shape.shapes:
-            drill(s, name)
-    if shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
-        try:
-            save_image(shape.image, name)
-        except:
-            print("Could not process an image")
-            _errors += 1
+    def drill_for_images(self, shape, name):
+        '''
+        Recursive function to look inside grouped shapes for pictures and save them.
 
-def iter_shapes(p):
-    '''
-    Iterate through shapes in the given Presentation
+        :param shape The parent shape to look inside.
+        :param name The partial name for any images we find, including the directory but not including the sequence number.
+        '''
+        if shape.shape_type == MSO_SHAPE_TYPE.GROUP:
+            for s in shape.shapes:
+                self.drill_for_images(s, name)
+        if shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
+            try:
+                self.save_image(shape.image, name)
+            except:
+                print("Could not process an image")
+                self.cur_errors += 1
 
-    :param p The presentation to iterate through.
-    '''
-    for slide in p.slides:
-        for shape in slide.shapes:
-            yield shape
+    def generate_image_name_part(self, filename):
+        '''
+        Generate a partial filename for an image
 
-
-def process_images(input_dir, output_dir):
-    """
-    Processes a folder of PowerPoint documents and saves each image to another folder.
-
-    :param input_dir The name of the subfolder to search for PowerPoint documents.
-    :param output_dir The name of the subfolder in which to save images.
-    """
-    global _image_index
-
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-
-    for eachfile in glob.glob(input_dir + os.sep + "*.pptx"):
-        _image_index = 1
-
-        # Strip input directory path and replace with chosen output path
-        name = eachfile.split(os.sep)[1]
+        :param filename The file name base to use.
+        :param output_dir The output directory to use, since we generate the path here too.
+        '''
+        # Strip input directory path and replace with image output path
+        name = filename.split(os.sep)[1]
 
         # Strip file extension
         name = name.split('.')[0]
 
         # Prepend output directory to name, for saving later
-        name = output_dir + os.sep + name
+        return self.image_output_dir + os.sep + name
 
-        for shape in iter_shapes(Presentation(eachfile)):
-            drill(shape, name)
+    def process_files(self):
+        """
+        Processes a folder of PowerPoint documents and saves a .csv report of all the text within each document, including presenter notes.
 
-def process_text(input_dir):
-    """
-    Processes a folder of PowerPoint documents and saves a .csv report of all the text within each document, including presenter notes.
+        :param input_dir The name of the subfolder to search for PowerPoint documents.
+        :param output_dir The name of the subfolder in which to save images.
+        """
 
-    :param input_dir The name of the subfolder to search for PowerPoint documents.
-    """
-    with open('text.csv', 'w', encoding="utf-8", newline='') as file:
-        writer = csv.writer(file)
-        count = 0
+        if not os.path.exists(self.image_output_dir):
+            os.makedirs(self.image_output_dir)
 
-        # Write table header
-        field = ["file", "page", "text", "notes"]
-        writer.writerow(field)
+        with open('text.csv', 'w', encoding="utf-8", newline='') as file:
+            writer = csv.writer(file)
+            presentation_count = 0
 
-        # Iterate through files
-        print("Processing:")
-        for eachfile in glob.glob(input_dir + os.sep + "*.pptx"):
-            ppt = Presentation(eachfile)
-            print("* " + eachfile)
-            count += 1
+            # Write table header
+            field = ["file", "page", "text", "notes"]
+            writer.writerow(field)
 
-            # Iterate through slides
-            for page, slide in enumerate(ppt.slides):
-                text = ''
+            # Iterate through files
+            print("Processing:")
+            for eachfile in glob.glob(self.input_dir + os.sep + "*.pptx"):
+                ppt = Presentation(eachfile)
+                print("* " + eachfile)
+                presentation_count += 1
+                self.cur_image_index = 1
 
-                # Collect all the text on the slide into one string, separated by newlines
-                for shape in slide.shapes:
-                    if shape.has_text_frame and shape.text.strip():
-                        text += os.linesep
-                        text += shape.text
+                name = self.generate_image_name_part(eachfile)
 
-                # Write the page number, collected text, and presenter notes as a new row
-                writer.writerow([eachfile, page, text, slide.notes_slide.notes_text_frame.text])
+                # Iterate through slides
+                for page, slide in enumerate(ppt.slides):
+                    # Collect all the text on the slide into one string, separated by newlines
+                    text = ''
+                    for shape in slide.shapes:
+                        if shape.has_text_frame and shape.text.strip():
+                            text += os.linesep
+                            text += shape.text
 
-        print("Finished. Total files: " + str(count) + ", total errors reading images: " + str(_errors))
+                    # Write the page number, collected text, and presenter notes as a new row
+                    writer.writerow([eachfile, page, text, slide.notes_slide.notes_text_frame.text])
+
+                    # Save images from this slide
+                    for shape in slide.shapes:
+                        self.drill_for_images(shape, name)
+
+            print("Finished. Total files: " + str(presentation_count) + ", total errors reading images: " + str(self.cur_errors))
 
 def main():
-    input_dir = 'input'
-    image_output_dir = 'images'
-
-    process_images(input_dir, image_output_dir)
-    process_text(input_dir)
+    ext = PowerPointExtractor('input', 'images')
+    ext.process_files()
 
 if __name__ == "__main__":
     main()
